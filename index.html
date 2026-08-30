@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NEXA PRINT — Gráfica Profissional</title>
+  <meta name="description" content="NEXA PRINT — produtos gráficos, configurações, preços e gabaritos em um só lugar.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="container nav-wrap">
+      <a class="brand" href="index.html" aria-label="NEXA PRINT">
+        <span class="brand-mark">N</span>
+        <span><strong>NEXA</strong> <b>PRINT</b><small>GRÁFICA PROFISSIONAL</small></span>
+      </a>
+      <div class="search-wrap">
+        <label for="search" class="sr-only">Pesquisar produtos</label>
+        <input id="search" type="search" placeholder="O que você procura? Ex.: cartão de visita, banner, adesivo...">
+      </div>
+      <nav class="nav-actions">
+        <a href="index.html#categorias">Categorias</a>
+        <a href="admin.html">Acesso restrito</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero container">
+      <div class="hero-copy">
+        <span class="eyebrow">NEXA PRINT</span>
+        <h1>Encontre o material certo para o seu projeto.</h1>
+        <p>Produtos gráficos, configurações, preços e gabaritos organizados para você comprar e preparar sua arte com segurança.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#produtos">Ver produtos</a>
+          <a class="btn btn-light" href="#categorias">Explorar categorias</a>
+        </div>
+      </div>
+      <div class="hero-note">
+        <div class="note-icon">✓</div>
+        <strong>Compra sem complicação</strong>
+        <span>Escolha a configuração, baixe o gabarito correto e envie sua arte.</span>
+      </div>
+    </section>
+
+    <section id="categorias" class="container section">
+      <div class="section-heading">
+        <div><span class="eyebrow">NAVEGAÇÃO</span><h2>Categorias</h2></div>
+        <a href="#produtos">Ver produtos</a>
+      </div>
+      <div id="categoryGrid" class="category-grid"></div>
+    </section>
+
+    <section id="produtos" class="container section">
+      <div class="section-heading">
+        <div><span class="eyebrow">CATÁLOGO</span><h2>Produtos em destaque</h2></div>
+        <span id="catalogCount" class="muted"></span>
+      </div>
+      <div id="productGrid" class="product-grid"></div>
+      <div id="emptyState" class="empty-state hidden">
+        <strong>Nenhum produto encontrado.</strong>
+        <span>Confira a busca ou aguarde a importação do catálogo.</span>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-wrap"><div><strong>NEXA PRINT</strong><span>Gráfica Profissional</span></div><a href="admin.html">Acesso administrativo</a></div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
