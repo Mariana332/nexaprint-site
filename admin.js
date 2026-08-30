@@ -1,84 +1,28 @@
 const { createClient } = window.supabase;
 const db = createClient(window.NEXA_CONFIG.SUPABASE_URL, window.NEXA_CONFIG.SUPABASE_KEY);
-
-const loginPanel=document.querySelector('#loginPanel');
-const loginForm=document.querySelector('#loginForm');
-const loginMessage=document.querySelector('#loginMessage');
-const area=document.querySelector('#adminArea');
-const adminMessage=document.querySelector('#adminMessage');
-const sectionsList=document.querySelector('#sectionsList');
-const escapeHtml=v=>String(v??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#039;'}[c]));
-
-async function getUser(){
-  const {data:{user}}=await db.auth.getUser();
-  return user;
-}
-
-async function requireAdmin(){
-  const user=await getUser();
-  if(!user) return false;
-  const {data:profile,error}=await db.from('profiles').select('is_admin,full_name').eq('id',user.id).maybeSingle();
-  if(error||!profile?.is_admin){ await db.auth.signOut(); return false; }
-  return true;
-}
-
-async function loadSettings(){
-  const {data,error}=await db.from('site_settings').select('*').eq('id',1).maybeSingle();
-  if(error||!data) return;
-  const fields=['brand_name','logo_url','primary_color','secondary_color','text_color','background_color','heading_font','body_font','homepage_title','homepage_subtitle'];
-  fields.forEach(k=>{const el=document.querySelector(`#${k}`);if(el)el.value=data[k]??'';});
-  const mark=document.querySelector('#brandMark');
-  if(mark&&data.logo_url){mark.className='brand-logo';mark.outerHTML=`<img id="brandMark" class="brand-logo" src="${escapeHtml(data.logo_url)}" alt="${escapeHtml(data.brand_name||'NEXA PRINT')}">`;}
-}
-
-async function saveSettings(){
-  const payload={};
-  ['brand_name','logo_url','primary_color','secondary_color','text_color','background_color','heading_font','body_font','homepage_title','homepage_subtitle'].forEach(k=>{payload[k]=document.querySelector(`#${k}`).value.trim();});
-  const {error}=await db.from('site_settings').upsert({id:1,...payload,updated_at:new Date().toISOString()},{onConflict:'id'});
-  adminMessage.textContent=error?'Não foi possível salvar.': 'Configurações salvas.';
-  if(error) console.error(error);
-  setTimeout(()=>adminMessage.textContent='',2500);
-}
-
-async function loadSections(){
-  const {data,error}=await db.from('home_sections').select('*').order('sort_order',{ascending:true});
-  if(error){sectionsList.innerHTML='<div class="muted">Não foi possível carregar as seções.</div>';return;}
-  if(!data?.length){sectionsList.innerHTML='<div class="empty-state" style="padding:18px"><strong>Nenhuma seção cadastrada</strong><span>Use “Adicionar seção” para criar blocos controláveis.</span></div>';return;}
-  sectionsList.innerHTML=data.map(s=>`<div class="panel" style="padding:13px;background:#fbfcfd"><strong style="color:var(--ink)">${escapeHtml(s.section_type||'Seção')}</strong><div class="muted" style="margin-top:3px">${escapeHtml(s.title||'Sem título')}</div><button class="btn btn-light" style="margin-top:9px" data-section-id="${escapeHtml(s.id)}">Editar</button></div>`).join('');
-}
-
-async function addSection(){
-  const section_type=prompt('Tipo da seção (ex.: oferta, banner, destaque):','destaque');
-  if(!section_type) return;
-  const title=prompt('Título da seção:','Nova seção');
-  const {data:maxRow}=await db.from('home_sections').select('sort_order').order('sort_order',{ascending:false}).limit(1).maybeSingle();
-  const sort_order=Number(maxRow?.sort_order||0)+1;
-  const {error}=await db.from('home_sections').insert({section_type,title:title||'',sort_order,is_active:true,settings:{}});
-  if(error){adminMessage.textContent='Não foi possível criar a seção.';console.error(error);}
-  else {adminMessage.textContent='Seção criada.';await loadSections();}
-  setTimeout(()=>adminMessage.textContent='',2500);
-}
-
-async function enterAdmin(){
-  const ok=await requireAdmin();
-  if(!ok){loginPanel.classList.remove('hidden');area.classList.add('hidden');return;}
-  loginPanel.classList.add('hidden');area.classList.remove('hidden');
-  await Promise.all([loadSettings(),loadSections()]);
-}
-
-loginForm?.addEventListener('submit',async e=>{
-  e.preventDefault();
-  loginMessage.textContent='Entrando...';
-  const email=document.querySelector('#email').value.trim();
-  const password=document.querySelector('#password').value;
-  const {error}=await db.auth.signInWithPassword({email,password});
-  if(error){loginMessage.textContent='E-mail ou senha inválidos.';return;}
-  loginMessage.textContent='';
-  await enterAdmin();
-});
-
-document.querySelector('#saveSettings')?.addEventListener('click',saveSettings);
-document.querySelector('#addSection')?.addEventListener('click',addSection);
-document.querySelector('#logout')?.addEventListener('click',async()=>{await db.auth.signOut();location.reload();});
-
-enterAdmin();
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=v=>String(v??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#039;'}[c]));
+const slugify=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||`produto-${Date.now()}`;
+function flash(text,ok=true){const e=$('#adminMessage');if(!e)return;e.textContent=text;e.style.color=ok?'var(--admin-primary-dark)':'var(--admin-danger)';clearTimeout(flash.t);flash.t=setTimeout(()=>e.textContent='',3200)}
+async function requireAdmin(){const {data:{user}}=await db.auth.getUser();if(!user)return null;const {data:p}=await db.from('profiles').select('is_admin,full_name').eq('id',user.id).maybeSingle();return p?.is_admin?user:null}
+function tab(name){$$('.tab').forEach(x=>x.classList.toggle('hidden',x.dataset.panel!==name));$$('.side button[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===name));location.hash=name;if(name==='dashboard')stats();if(name==='products')products();if(name==='prices')priceSearch($('#priceSearch')?.value||'');if(name==='home')homeSections();if(name==='settings')settings()}
+async function count(t){const {count,error}=await db.from(t).select('*',{count:'exact',head:true});if(error)console.error(error);return count||0}
+async function stats(){const v=await Promise.all(['products','product_variants','variant_prices','templates'].map(count));['#statProducts','#statVariants','#statPrices','#statTemplates'].forEach((s,i)=>$(s).textContent=v[i].toLocaleString('pt-BR'))}
+async function settings(){const {data}=await db.from('site_settings').select('*').eq('id',1).maybeSingle();if(!data)return;['brand_name','logo_url','heading_font','body_font','homepage_title','homepage_subtitle','contact_phone','whatsapp_number'].forEach(k=>{const e=$('#'+k);if(e)e.value=data[k]??''});['primary_color','secondary_color','text_color','background_color'].forEach(k=>{const e=$('#'+k);if(e)e.value=data[k]||'#ffffff'})}
+async function saveSettings(){const p={};['brand_name','logo_url','heading_font','body_font','homepage_title','homepage_subtitle','contact_phone','whatsapp_number'].forEach(k=>p[k]=$('#'+k).value.trim());['primary_color','secondary_color','text_color','background_color'].forEach(k=>p[k]=$('#'+k).value);const {error}=await db.from('site_settings').upsert({id:1,...p,updated_at:new Date().toISOString()},{onConflict:'id'});flash(error?'Não foi possível salvar.':'Configurações salvas.',!error)}
+let currentProducts=[];
+async function products(){let q=db.from('products').select('id,name,slug,category_id,is_active,is_offer,is_featured').order('name').limit(100);const term=$('#productSearch')?.value.trim();const status=$('#productStatus')?.value||'active';if(term)q=q.ilike('name',`%${term}%`);if(status==='active')q=q.eq('is_active',true);if(status==='inactive')q=q.eq('is_active',false);const {data,error}=await q;if(error){console.error(error);return}currentProducts=data||[];const ids=[...new Set(currentProducts.map(p=>p.category_id).filter(Boolean))];const cr=ids.length?await db.from('categories').select('id,name').in('id',ids):{data:[]};const cm=new Map((cr.data||[]).map(c=>[c.id,c.name]));$('#productsTable').innerHTML=currentProducts.map(p=>`<tr><td><strong>${esc(p.name)}</strong><div class="hint">${esc(p.slug)}</div></td><td>${esc(cm.get(p.category_id)||'—')}</td><td><span class="pill">${p.is_active?'Ativo':'Inativo'}</span></td><td>${p.is_offer?'<span class="pill offer">Oferta</span>':'—'}</td><td><div class="actions"><button class="btn icon-btn" data-edit="${p.id}">Editar</button><button class="btn icon-btn" data-toggle="${p.id}">${p.is_active?'Desativar':'Ativar'}</button></div></td></tr>`).join('')||'<tr><td colspan="5" class="muted">Nenhum produto encontrado.</td></tr>'}
+let editing=null;
+async function openEdit(id){const {data}=await db.from('products').select('*').eq('id',id).maybeSingle();if(!data)return;const c=await db.from('categories').select('name').eq('id',data.category_id).maybeSingle();editing=id;$('#modalTitle').textContent='Editar produto';$('#p_name').value=data.name||'';$('#p_category').value=c.data?.name||'';$('#p_image').value=data.image_url||'';$('#p_short').value=data.short_description||'';$('#p_desc').value=data.description||'';$('#p_source').value=data.source_url||'';$('#p_days').value=data.production_days??'';$('#p_active').checked=data.is_active!==false;$('#p_featured').checked=!!data.is_featured;$('#p_offer').checked=!!data.is_offer;$('#modal').classList.add('open')}
+function openNew(){editing=null;$('#modalTitle').textContent='Cadastrar produto';$('#productForm').reset();$('#p_active').checked=true;$('#modal').classList.add('open')}
+async function saveProduct(e){e.preventDefault();const name=$('#p_name').value.trim(),catName=$('#p_category').value.trim();if(!name||!catName){flash('Nome e categoria são obrigatórios.',false);return}let cat=await db.from('categories').select('id').ilike('name',catName).maybeSingle();let cid=cat.data?.id;if(!cid){const n=await db.from('categories').insert({name:catName,slug:slugify(catName),is_active:true,sort_order:0}).select('id').single();if(n.error){console.error(n.error);flash('Não foi possível criar a categoria.',false);return}cid=n.data.id}const payload={name,slug:slugify(name)+`-${Date.now().toString(36)}`,category_id:cid,image_url:$('#p_image').value.trim()||null,short_description:$('#p_short').value.trim()||null,description:$('#p_desc').value.trim()||null,source_url:$('#p_source').value.trim()||null,production_days:Number($('#p_days').value)||null,is_active:$('#p_active').checked,is_featured:$('#p_featured').checked,is_offer:$('#p_offer').checked,is_manual:true,updated_at:new Date().toISOString()};const r=editing?await db.from('products').update(payload).eq('id',editing):await db.from('products').insert(payload);if(r.error){console.error(r.error);flash('Não foi possível salvar.',false);return}$('#modal').classList.remove('open');flash(editing?'Produto atualizado.':'Produto cadastrado.');await products();stats()}
+async function toggleProduct(id){const p=currentProducts.find(x=>x.id===id);if(!p)return;const {error}=await db.from('products').update({is_active:!p.is_active,updated_at:new Date().toISOString()}).eq('id',id);flash(error?'Não foi possível alterar.':'Status atualizado.',!error);if(!error)products()}
+async function priceSearch(term){const box=$('#priceProducts');if(!box)return;term=(term||'').trim();if(!term){box.innerHTML='<div class="note">Digite o nome do produto para carregar configurações e preços.</div>';return}const {data:ps}=await db.from('products').select('id,name').ilike('name',`%${term}%`).order('name').limit(10);if(!ps?.length){box.innerHTML='<div class="note">Nenhum produto encontrado.</div>';return}const out=[];for(const p of ps){const {data:vs}=await db.from('product_variants').select('id,configuration_name,size,material,printing,finish,cut_type').eq('product_id',p.id).order('configuration_name').limit(20);out.push(`<div class="panel"><h3>${esc(p.name)}</h3>${(vs||[]).map(v=>`<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--admin-line)"><strong>${esc(v.configuration_name||'Configuração')}</strong><div class="hint">${esc([v.size,v.material,v.printing,v.finish,v.cut_type].filter(Boolean).join(' • '))}</div><div id="prices-${v.id}" class="table-wrap" style="margin-top:8px"><div style="padding:10px" class="muted">Carregando…</div></div></div>`).join('')||'<div class="muted">Sem configurações.</div>'}</div>`)}box.innerHTML=out.join('');for(const p of ps){const {data:vs}=await db.from('product_variants').select('id').eq('product_id',p.id);for(const v of vs||[])loadPrices(v.id)}}
+async function loadPrices(id){const b=$('#prices-'+id);const {data:ps}=await db.from('variant_prices').select('id,quantity,unit_suffix,cost_price,selling_price').eq('variant_id',id).order('quantity');if(!ps?.length){b.innerHTML='<div style="padding:10px" class="muted">Sem preços.</div>';return}b.innerHTML=`<table class="table" style="min-width:580px"><thead><tr><th>Quantidade</th><th>Custo</th><th>Venda</th><th></th></tr></thead><tbody>${ps.map(p=>`<tr><td>${esc(p.quantity)} ${esc(p.unit_suffix||'un')}</td><td><input data-cost="${p.id}" value="${p.cost_price??''}" style="width:100px;padding:7px;border:1px solid var(--admin-line);border-radius:7px"></td><td><input data-sale="${p.id}" value="${p.selling_price??''}" style="width:110px;padding:7px;border:1px solid var(--admin-line);border-radius:7px"></td><td><button class="btn icon-btn" data-save-price="${p.id}">Salvar</button></td></tr>`).join('')}</tbody></table>`}
+async function savePrice(id){const cost=Number($(`[data-cost="${id}"]`).value),sale=Number($(`[data-sale="${id}"]`).value);if(!Number.isFinite(cost)||!Number.isFinite(sale)){flash('Informe valores numéricos válidos.',false);return}const {error}=await db.from('variant_prices').update({cost_price:cost,selling_price:sale,updated_at:new Date().toISOString()}).eq('id',id);flash(error?'Não foi possível salvar.':'Preço atualizado.',!error)}
+async function homeSections(){const {data,error}=await db.from('home_sections').select('*').order('sort_order');if(error){$('#homeSections').innerHTML='<div class="note">Não foi possível carregar.</div>';return}$('#homeSections').innerHTML=(data||[]).map(s=>`<div class="list-row"><div><strong>${esc(s.title||s.section_type||'Seção')}</strong><div class="hint">${esc(s.section_type)} · ${s.is_active?'Ativa':'Oculta'}</div></div><div class="actions"><button class="btn" data-sec-toggle="${s.id}">${s.is_active?'Ocultar':'Ativar'}</button></div></div>`).join('')||'<div class="note">Nenhuma seção cadastrada.</div>'}
+async function addSection(){const type=prompt('Tipo da seção:','destaque');if(!type)return;const title=prompt('Título:','Nova seção');if(title===null)return;const {data:max}=await db.from('home_sections').select('sort_order').order('sort_order',{ascending:false}).limit(1).maybeSingle();const {error}=await db.from('home_sections').insert({section_type:type,title,sort_order:Number(max?.sort_order||0)+1,is_active:true,settings:{}});flash(error?'Não foi possível criar.':'Seção criada.',!error);homeSections()}
+async function toggleSection(id){const r=await db.from('home_sections').select('is_active').eq('id',id).maybeSingle();if(!r.data)return;const {error}=await db.from('home_sections').update({is_active:!r.data.is_active,updated_at:new Date().toISOString()}).eq('id',id);flash(error?'Não foi possível alterar.':'Seção atualizada.',!error);homeSections()}
+function importPreview(file){if(!file)return;$('#importFileName').textContent=`${file.name} · ${(file.size/1024/1024).toFixed(2)} MB`;$('#importPreview').innerHTML='<div class="note"><strong>Planilha selecionada.</strong> O arquivo será validado pelo motor de importação antes de qualquer gravação em massa.</div>';$('#prepareImport').disabled=false}
+async function boot(){const user=await requireAdmin();if(!user){$('#loginPanel').classList.remove('hidden');return}$('#loginPanel').classList.add('hidden');$('#adminArea').classList.remove('hidden');$$('.side button[data-tab]').forEach(b=>b.onclick=()=>tab(b.dataset.tab));$$('[data-goto]').forEach(b=>b.onclick=()=>tab(b.dataset.goto));$('#saveSettings').onclick=saveSettings;$('#newProduct').onclick=openNew;$('#modalClose').onclick=()=>$('#modal').classList.remove('open');$('#modalCancel').onclick=()=>$('#modal').classList.remove('open');$('#productForm').addEventListener('submit',saveProduct);$('#addSection').onclick=addSection;$('#logout').onclick=async()=>{await db.auth.signOut();location.reload()};$('#productSearch').oninput=()=>{clearTimeout(products.t);products.t=setTimeout(products,250)};$('#productStatus').onchange=products;$('#priceSearch').oninput=()=>{clearTimeout(priceSearch.t);priceSearch.t=setTimeout(()=>priceSearch($('#priceSearch').value),300)};$('#importFile').onchange=e=>importPreview(e.target.files?.[0]);$('#clearImport').onclick=()=>{$('#importFile').value='';$('#importFileName').textContent='Nenhum arquivo selecionado';$('#importPreview').innerHTML='';$('#prepareImport').disabled=true};$('#prepareImport').onclick=()=>flash('Planilha preparada para validação do motor de importação.');document.addEventListener('click',e=>{const x=e.target.closest('[data-edit],[data-toggle],[data-save-price],[data-sec-toggle]');if(!x)return;if(x.dataset.edit)openEdit(x.dataset.edit);else if(x.dataset.toggle)toggleProduct(x.dataset.toggle);else if(x.dataset.savePrice)savePrice(x.dataset.savePrice);else if(x.dataset.secToggle)toggleSection(x.dataset.secToggle)});await stats();await settings();await products();tab(location.hash.replace('#','')||'dashboard')}
+$('#loginForm')?.addEventListener('submit',async e=>{e.preventDefault();$('#loginMessage').textContent='Entrando…';const {error}=await db.auth.signInWithPassword({email:$('#email').value.trim(),password:$('#password').value});if(error){$('#loginMessage').textContent='E-mail ou senha inválidos.';return}boot()});boot().catch(console.error);
