@@ -1,0 +1,1 @@
+document.addEventListener('DOMContentLoaded',()=>{const b=document.querySelector('#addSection');if(b)b.addEventListener('click',()=>{if(typeof addSection==='function')addSection();});});
