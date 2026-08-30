@@ -1,1 +1,63 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Acesso restrito — NEXA PRINT</title><link rel="stylesheet" href="styles.css"></head><body><header class="topbar"><div class="container nav-wrap"><a class="brand" href="index.html"><span class="brand-mark">N</span><span><strong>NEXA</strong> <b>PRINT</b><small>GRÁFICA PROFISSIONAL</small></span></a><nav class="nav-actions"><a href="index.html">Voltar para loja</a></nav></div></header><main class="container" style="padding:50px 0;max-width:760px"><div class="panel" style="border:1px solid var(--line);border-radius:16px;padding:28px;background:#fff"><span class="eyebrow">ACESSO RESTRITO</span><h1 style="color:var(--ink);margin:0 0 8px">Administrador NEXA PRINT</h1><p class="muted">Entraremos aqui para controlar produtos, gabaritos, identidade visual, ofertas e conteúdo sem editar o código.</p><div class="divider"></div><form id="loginForm"><div class="field" style="margin-bottom:14px"><label>E-MAIL</label><input id="email" type="email" required placeholder="seu@email.com"></div><div class="field" style="margin-bottom:14px"><label>SENHA</label><input id="password" type="password" required placeholder="••••••••"></div><button class="btn btn-primary" type="submit">Entrar</button><p id="loginMessage" class="muted"></p></form><section id="adminArea" class="hidden"><div class="divider"></div><div class="hero-note"><strong>Painel base criado.</strong><span>A próxima etapa conecta os formulários de identidade, catálogo, importação e conteúdo ao Supabase.</span></div><div style="margin-top:18px"><button id="logout" class="btn btn-light">Sair</button></div></section></div></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="admin.js"></script></body></html>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Acesso restrito — NEXA PRINT</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="header-note"><div class="container"><span>Painel administrativo NEXA PRINT</span><span>•</span><span>Acesso restrito</span></div></div>
+  <header class="topbar"><div class="container nav-wrap">
+    <a class="brand" href="index.html"><span id="brandMark" class="brand-fallback">N</span><span><span class="brand-name"><strong>NEXA</strong><b>PRINT</b></span><small>GRÁFICA PROFISSIONAL</small></span></a>
+    <nav class="nav-actions"><a href="index.html">Voltar para loja</a><button id="logout" class="btn btn-light" type="button">Sair</button></nav>
+  </div></header>
+
+  <main class="container" style="padding:32px 0 60px">
+    <section id="loginPanel" class="panel" style="max-width:620px;margin:0 auto">
+      <span class="eyebrow">ACESSO RESTRITO</span><h1 style="margin:0;color:var(--ink);font-size:30px">Administrador NEXA PRINT</h1>
+      <p class="muted">Entre para controlar a loja sem editar o GitHub.</p><div class="divider"></div>
+      <form id="loginForm">
+        <div class="field" style="margin-bottom:14px"><label>E-MAIL</label><input id="email" type="email" required placeholder="seu@email.com"></div>
+        <div class="field" style="margin-bottom:14px"><label>SENHA</label><input id="password" type="password" required placeholder="••••••••"></div>
+        <button class="btn btn-primary" type="submit">Entrar no painel</button><p id="loginMessage" class="muted"></p>
+      </form>
+    </section>
+
+    <section id="adminArea" class="hidden">
+      <div class="section-heading" style="margin-bottom:14px"><div><span class="eyebrow">PAINEL</span><h2>Controle da loja</h2></div><span id="adminMessage" class="muted"></span></div>
+      <div style="display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);gap:18px">
+        <section class="panel">
+          <span class="eyebrow">IDENTIDADE E SITE</span><h3 class="section-title">Configurações gerais</h3><p class="muted" style="margin-top:4px">Esses campos alimentam a loja pública.</p>
+          <div class="config-grid" style="margin-top:16px">
+            <div class="field"><label>Nome da marca</label><input id="brand_name" type="text"></div>
+            <div class="field"><label>URL da logo</label><input id="logo_url" type="url" placeholder="https://..."></div>
+            <div class="field"><label>Cor principal</label><input id="primary_color" type="text" placeholder="#19C7B5"></div>
+            <div class="field"><label>Cor secundária</label><input id="secondary_color" type="text" placeholder="#000000"></div>
+            <div class="field"><label>Cor do texto</label><input id="text_color" type="text" placeholder="#102033"></div>
+            <div class="field"><label>Cor de fundo</label><input id="background_color" type="text" placeholder="#FFFFFF"></div>
+            <div class="field"><label>Fonte dos títulos</label><input id="heading_font" type="text" placeholder="Inter"></div>
+            <div class="field"><label>Fonte do corpo</label><input id="body_font" type="text" placeholder="Inter"></div>
+          </div>
+          <div class="divider"></div>
+          <span class="eyebrow">PÁGINA INICIAL</span>
+          <div class="field" style="margin-top:10px"><label>Título principal</label><input id="homepage_title" type="text"></div>
+          <div class="field" style="margin-top:12px"><label>Subtítulo</label><textarea id="homepage_subtitle" rows="3" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;resize:vertical"></textarea></div>
+          <div style="margin-top:14px"><button id="saveSettings" class="btn btn-primary" type="button">Salvar configurações</button></div>
+        </section>
+
+        <aside class="panel">
+          <span class="eyebrow">SEÇÕES DA HOME</span><h3 class="section-title">Conteúdo ajustável</h3><p class="muted" style="margin-top:4px">As seções podem ser alteradas sem mexer no código.</p>
+          <div id="sectionsList" style="display:grid;gap:10px;margin-top:15px"></div>
+          <div class="divider"></div>
+          <button id="addSection" class="btn btn-light" type="button">Adicionar seção</button>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
