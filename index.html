@@ -7,7 +7,7 @@
   <meta name="description" content="NEXA PRINT — catálogo de produtos gráficos, configurações, preços e gabaritos.">
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body id="top">
   <div class="header-note"><div class="container"><span>Segunda a sexta: 08:30 às 17:00</span><span>•</span><span>Atendimento NEXA PRINT</span></div></div>
   <header class="topbar">
     <div class="container nav-wrap">
@@ -48,8 +48,9 @@
 
     <section id="produtos" class="container section">
       <div class="section-heading"><div><span class="eyebrow">CATÁLOGO</span><h2>Produtos</h2></div><span id="catalogCount" class="muted"></span></div>
-      <div class="product-toolbar"><span id="activeFilter" class="filter-chip active">Todos</span><span class="muted">Selecione um produto para configurar e comprar.</span></div>
+      <div class="product-toolbar"><button id="activeFilter" type="button" class="filter-chip active">Todos</button><span class="muted">Selecione um produto para configurar e comprar.</span></div>
       <div id="productGrid" class="product-grid"></div>
+      <div class="catalog-more hidden" id="catalogMore"><button id="loadMore" class="btn btn-light">Carregar mais produtos</button></div>
       <div id="emptyState" class="empty-state hidden"><strong>Nenhum produto encontrado.</strong><span>Confira o termo pesquisado ou escolha outra categoria.</span></div>
     </section>
   </main>
