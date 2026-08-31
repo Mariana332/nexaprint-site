@@ -12,8 +12,6 @@ document.addEventListener('DOMContentLoaded',()=>{
     .price-margin-input{width:105px!important;padding:8px!important;border:1px solid var(--admin-line)!important;border-radius:8px!important;background:#fff!important}
     .price-margin-input:focus{outline:0;border-color:var(--admin-primary)!important;box-shadow:0 0 0 3px rgba(18,185,170,.12)}
     .margin-help{display:block;font-size:10px;color:var(--admin-muted);margin-top:3px}
-    .price-panel-title{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:12px}
-    .price-panel-title .hint{font-size:11px}
     .art-setting{margin-top:18px;padding:18px;border:1px solid var(--admin-line);border-radius:14px;background:#fbfdfc}
     .art-setting h3{margin:0 0 5px}.art-setting p{margin:0 0 12px;font-size:13px;color:var(--admin-muted)}
     .art-setting-row{display:flex;align-items:end;gap:12px;max-width:420px}.art-setting-row .field{flex:1}.art-setting-row input{width:100%}
@@ -56,7 +54,6 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.addEventListener('click',e=>{const btn=e.target.closest?.('[data-save-price]');if(!btn)return;const row=btn.closest('tr'),marginEl=row?.querySelector('[data-margin]');if(!marginEl)return;e.preventDefault();e.stopImmediatePropagation();const costEl=row.querySelector('[data-cost]'),saleEl=row.querySelector('[data-sale]'),cost=Number(String(costEl?.value||'').replace(',','.')),margin=Number(String(marginEl.value||'').replace(',','.'));if(!Number.isFinite(cost)||cost<0||!Number.isFinite(margin)||margin<0||margin>=100){flash('Informe custo e uma margem entre 0% e 99,99%.',false);return}const sale=cost/(1-margin/100);saleEl.value=sale.toFixed(2);db.from('variant_prices').update({cost_price:cost,selling_price:sale,updated_at:new Date().toISOString()}).eq('id',btn.dataset.savePrice).then(({error})=>flash(error?'Não foi possível salvar.':`Preço atualizado para ${money(sale)} com margem de ${margin.toFixed(1)}%.`,!error))},true);
 
   function optionLabel(type){return ({art:'Criação de arte',finish:'Acabamento',cut:'Corte',service:'Serviço',other:'Outro'})[type]||type}
-  function optionTypeFor(value){return value==='all'?'':value}
   let optionEditing=null;
   async function loadOptions(){
     const box=document.querySelector('#nexaOptionsList');if(!box)return;
@@ -64,7 +61,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     let q=db.from('option_library').select('*').order('option_type').order('sort_order').order('label');
     if(filter!=='all')q=q.eq('option_type',filter);
     const {data,error}=await q;if(error){box.innerHTML='<div class="option-admin-empty">Não foi possível carregar os serviços.</div>';return}
-    box.innerHTML=(data||[]).map(o=>`<div class="option-admin-row"><div><div class="option-label">${esc(o.label)}</div><div class="option-type">${esc(optionLabel(o.option_type))}</div></div><div><input class="mini-input" data-opt-price="${o.id}" type="number" min="0" step="0.01" value="${o.price_add??0}" aria-label="Preço"></div><div class="option-desc">${esc(o.description||'Sem descrição')}</div><div><span class="pill">${o.is_active?'Ativo':'Inativo'}</span></div><div class="actions"><button class="btn" data-opt-edit="${o.id}">Editar</button><button class="btn" data-opt-toggle="${o.id}">${o.is_active?'Desativar':'Ativar'}</button></div></div>`).join('')||'<div class="option-admin-empty">Nenhum serviço cadastrado. Cadastre os adicionais que a NEXA oferece.</div>';
+    box.innerHTML=(data||[]).map(o=>`<div class="option-admin-row"><div><div class="option-label">${esc(o.label)}</div><div class="option-type">${esc(optionLabel(o.option_type))}</div></div><div><input class="mini-input" data-opt-price="${o.id}" type="number" min="0" step="0.01" value="${o.price_add??0}" aria-label="Preço"></div><div class="option-desc">${esc(o.description||'Sem descrição')}</div><div><span class="pill">${o.is_active?'Ativo':'Inativo'}</span></div><div class="actions"><button class="btn" data-opt-edit="${o.id}">Editar</button><button class="btn" data-opt-toggle="${o.id}">${o.is_active?'Desativar':'Ativar'}</button></div></div>`).join('')||'<div class="option-admin-empty">Nenhum adicional cadastrado. Cadastre os adicionais que a NEXA oferece.</div>';
+    box.querySelectorAll('[data-opt-price]').forEach(input=>input.addEventListener('change',async()=>{const price=Number(String(input.value).replace(',','.'));if(!Number.isFinite(price)||price<0){flash('Informe um preço válido.',false);return}const {error}=await db.from('option_library').update({price_add:price}).eq('id',input.dataset.optPrice);flash(error?'Não foi possível atualizar o preço.':'Preço do adicional atualizado.',!error)}));
   }
   async function saveOption(){
     const label=document.querySelector('#nexaOptionLabel')?.value.trim();const type=document.querySelector('#nexaOptionType')?.value;const price=Number(String(document.querySelector('#nexaOptionPrice')?.value||'0').replace(',','.'));const desc=document.querySelector('#nexaOptionDesc')?.value.trim()||null;
