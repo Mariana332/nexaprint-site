@@ -5,6 +5,23 @@
   let selectedBase = 0;
   const db = window.supabase && window.NEXA_CONFIG ? window.supabase.createClient(window.NEXA_CONFIG.SUPABASE_URL, window.NEXA_CONFIG.SUPABASE_KEY) : null;
 
+  function addCategoryNav(){
+    if(!db || document.querySelector('#categoryNav')) return;
+    const style=document.createElement('style');
+    style.textContent='.category-nav{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#fff}.category-nav-inner{display:flex;align-items:center;gap:8px;min-height:48px}.category-nav-scroll{display:flex;align-items:center;gap:6px;overflow-x:auto;overflow-y:hidden;scroll-behavior:smooth;scrollbar-width:thin;flex:1;padding:5px 2px}.category-nav-scroll::-webkit-scrollbar{height:5px}.category-nav-scroll::-webkit-scrollbar-track{background:#f0f4f2;border-radius:10px}.category-nav-scroll::-webkit-scrollbar-thumb{background:#b7cbc6;border-radius:10px}.category-nav-link{flex:0 0 auto;white-space:nowrap;padding:7px 12px;border:1px solid transparent;border-radius:999px;color:var(--ink);font-size:12px;font-weight:800}.category-nav-link:hover{background:#edf7f4;border-color:#c9e1db;color:var(--primary-dark)}.category-nav-arrow{width:30px;height:30px;flex:0 0 30px;border:1px solid var(--line);border-radius:50%;background:#fff;color:var(--ink);display:grid;place-items:center;font-size:18px}.category-nav-arrow:disabled{opacity:.35;cursor:default}.category-nav-label{flex:0 0 auto;color:var(--muted);font-size:10px;font-weight:900;letter-spacing:.1em;text-transform:uppercase}@media(max-width:760px){.category-nav-label{display:none}.category-nav-arrow{display:none}.category-nav-scroll{scrollbar-width:none}.category-nav-scroll::-webkit-scrollbar{display:none}.category-nav-link{font-size:11px;padding:7px 10px}}';
+    document.head.appendChild(style);
+    const nav=document.createElement('div');nav.id='categoryNav';nav.className='category-nav';nav.setAttribute('aria-label','Categorias de produtos');
+    document.querySelector('.topbar')?.insertAdjacentElement('afterend',nav);
+    const params=new URLSearchParams(location.search),currentCat=params.get('categoria')||'';
+    db.from('categories').select('name,slug,sort_order').eq('is_active',true).order('sort_order').order('name').then(({data})=>{
+      nav.innerHTML='<div class="container category-nav-inner"><span class="category-nav-label">Produtos</span><button class="category-nav-arrow" type="button" data-dir="-1" aria-label="Categorias anteriores">‹</button><div class="category-nav-scroll"><a class="category-nav-link" href="index.html#produtos">Todos</a></div><button class="category-nav-arrow" type="button" data-dir="1" aria-label="Próximas categorias">›</button></div>';
+      const scroll=nav.querySelector('.category-nav-scroll');
+      scroll.insertAdjacentHTML('beforeend',(data||[]).map(c=>`<a class="category-nav-link" href="index.html?categoria=${encodeURIComponent(c.slug)}#produtos">${esc(c.name)}</a>`).join(''));
+      nav.querySelectorAll('.category-nav-arrow').forEach(btn=>btn.addEventListener('click',()=>scroll.scrollBy({left:Number(btn.dataset.dir)*Math.max(240,scroll.clientWidth*.55),behavior:'smooth'})));
+      const update=()=>{const b=nav.querySelectorAll('.category-nav-arrow');b[0].disabled=scroll.scrollLeft<=2;b[1].disabled=scroll.scrollLeft+scroll.clientWidth>=scroll.scrollWidth-2};scroll.addEventListener('scroll',update,{passive:true});window.addEventListener('resize',update);update();
+    });
+  }
+
   async function loadArtPrice(){
     if(!db) return;
     const {data} = await db.from('site_settings').select('art_creation_price').eq('id',1).maybeSingle();
@@ -66,6 +83,7 @@
     recalc();
   }
 
+  addCategoryNav();
   loadArtPrice().finally(()=>{
     const obs=new MutationObserver(()=>enhance());
     obs.observe(document.querySelector('#detail') || document.body,{childList:true,subtree:true});
