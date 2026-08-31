@@ -17,7 +17,10 @@ document.addEventListener('DOMContentLoaded',()=>{
     .art-setting{margin-top:18px;padding:18px;border:1px solid var(--admin-line);border-radius:14px;background:#fbfdfc}
     .art-setting h3{margin:0 0 5px}.art-setting p{margin:0 0 12px;font-size:13px;color:var(--admin-muted)}
     .art-setting-row{display:flex;align-items:end;gap:12px;max-width:420px}.art-setting-row .field{flex:1}.art-setting-row input{width:100%}
-    @media(max-width:720px){#modal .form-grid{grid-template-columns:1fr!important}#modal.modal-backdrop,#shippingModal.modal-backdrop{padding:18px 12px!important}.art-setting-row{display:block}}
+    .options-admin{margin-top:24px}.options-admin-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:14px}.options-admin-head h2{margin:0 0 4px}.options-admin-head p{margin:0;color:var(--admin-muted);font-size:13px}.options-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}.options-toolbar select,.options-toolbar input{min-height:42px}.options-list{display:grid;gap:10px}.option-admin-row{display:grid;grid-template-columns:minmax(180px,1.5fr) 150px minmax(220px,2fr) 90px auto;gap:12px;align-items:center;padding:14px;border:1px solid var(--admin-line);border-radius:12px;background:#fff}.option-admin-row .mini-input{width:100%}.option-admin-row .option-label{font-weight:700}.option-admin-row .option-type{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--admin-muted)}.option-admin-row .option-desc{font-size:12px;color:var(--admin-muted)}.option-admin-row .actions{justify-content:flex-end}.option-admin-form{display:grid;grid-template-columns:1fr 180px 130px 2fr auto;gap:10px;align-items:end;padding:16px;border:1px dashed var(--admin-line);border-radius:12px;background:#fbfdfc;margin-bottom:14px}.option-admin-form .field{margin:0}.option-admin-form button{height:42px}.option-admin-empty{padding:18px;border:1px dashed var(--admin-line);border-radius:12px;color:var(--admin-muted);text-align:center}
+    .price-summary{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 14px}.price-summary span{padding:6px 9px;border-radius:999px;background:#f2f7f6;font-size:11px;color:var(--admin-muted)}
+    @media(max-width:900px){.option-admin-row{grid-template-columns:1fr 1fr}.option-admin-form{grid-template-columns:1fr 1fr}.option-admin-form .fullish{grid-column:1/-1}}
+    @media(max-width:720px){#modal .form-grid{grid-template-columns:1fr!important}#modal.modal-backdrop,#shippingModal.modal-backdrop{padding:18px 12px!important}.art-setting-row{display:block}.options-admin-head{display:block}.option-admin-row,.option-admin-form{grid-template-columns:1fr}.option-admin-form .fullish{grid-column:auto}}
   `;
   document.head.appendChild(style);
 
@@ -51,4 +54,38 @@ document.addEventListener('DOMContentLoaded',()=>{
   }
 
   document.addEventListener('click',e=>{const btn=e.target.closest?.('[data-save-price]');if(!btn)return;const row=btn.closest('tr'),marginEl=row?.querySelector('[data-margin]');if(!marginEl)return;e.preventDefault();e.stopImmediatePropagation();const costEl=row.querySelector('[data-cost]'),saleEl=row.querySelector('[data-sale]'),cost=Number(String(costEl?.value||'').replace(',','.')),margin=Number(String(marginEl.value||'').replace(',','.'));if(!Number.isFinite(cost)||cost<0||!Number.isFinite(margin)||margin<0||margin>=100){flash('Informe custo e uma margem entre 0% e 99,99%.',false);return}const sale=cost/(1-margin/100);saleEl.value=sale.toFixed(2);db.from('variant_prices').update({cost_price:cost,selling_price:sale,updated_at:new Date().toISOString()}).eq('id',btn.dataset.savePrice).then(({error})=>flash(error?'Não foi possível salvar.':`Preço atualizado para ${money(sale)} com margem de ${margin.toFixed(1)}%.`,!error))},true);
+
+  function optionLabel(type){return ({art:'Criação de arte',finish:'Acabamento',cut:'Corte',service:'Serviço',other:'Outro'})[type]||type}
+  function optionTypeFor(value){return value==='all'?'':value}
+  let optionEditing=null;
+  async function loadOptions(){
+    const box=document.querySelector('#nexaOptionsList');if(!box)return;
+    const filter=document.querySelector('#nexaOptionFilter')?.value||'all';
+    let q=db.from('option_library').select('*').order('option_type').order('sort_order').order('label');
+    if(filter!=='all')q=q.eq('option_type',filter);
+    const {data,error}=await q;if(error){box.innerHTML='<div class="option-admin-empty">Não foi possível carregar os serviços.</div>';return}
+    box.innerHTML=(data||[]).map(o=>`<div class="option-admin-row"><div><div class="option-label">${esc(o.label)}</div><div class="option-type">${esc(optionLabel(o.option_type))}</div></div><div><input class="mini-input" data-opt-price="${o.id}" type="number" min="0" step="0.01" value="${o.price_add??0}" aria-label="Preço"></div><div class="option-desc">${esc(o.description||'Sem descrição')}</div><div><span class="pill">${o.is_active?'Ativo':'Inativo'}</span></div><div class="actions"><button class="btn" data-opt-edit="${o.id}">Editar</button><button class="btn" data-opt-toggle="${o.id}">${o.is_active?'Desativar':'Ativar'}</button></div></div>`).join('')||'<div class="option-admin-empty">Nenhum serviço cadastrado. Cadastre os adicionais que a NEXA oferece.</div>';
+  }
+  async function saveOption(){
+    const label=document.querySelector('#nexaOptionLabel')?.value.trim();const type=document.querySelector('#nexaOptionType')?.value;const price=Number(String(document.querySelector('#nexaOptionPrice')?.value||'0').replace(',','.'));const desc=document.querySelector('#nexaOptionDesc')?.value.trim()||null;
+    if(!label||!type||!Number.isFinite(price)||price<0){flash('Preencha nome, tipo e um preço válido.',false);return}
+    const payload={label,option_type:type,price_add:price,description:desc,is_active:true,sort_order:0};let r;
+    if(optionEditing){r=await db.from('option_library').update(payload).eq('id',optionEditing)}else{r=await db.from('option_library').insert(payload)}
+    if(r.error){console.error(r.error);flash('Não foi possível salvar o adicional.',false);return}
+    optionEditing=null;document.querySelector('#nexaOptionLabel').value='';document.querySelector('#nexaOptionPrice').value='0';document.querySelector('#nexaOptionDesc').value='';document.querySelector('#nexaOptionSave').textContent='Adicionar adicional';flash('Adicional salvo.');loadOptions();
+  }
+  async function editOption(id){const {data}=await db.from('option_library').select('*').eq('id',id).maybeSingle();if(!data)return;optionEditing=id;document.querySelector('#nexaOptionLabel').value=data.label||'';document.querySelector('#nexaOptionType').value=data.option_type||'service';document.querySelector('#nexaOptionPrice').value=data.price_add??0;document.querySelector('#nexaOptionDesc').value=data.description||'';document.querySelector('#nexaOptionSave').textContent='Salvar alteração';document.querySelector('#nexaOptionLabel')?.focus()}
+  async function toggleOption(id){const {data}=await db.from('option_library').select('is_active').eq('id',id).maybeSingle();if(!data)return;const {error}=await db.from('option_library').update({is_active:!data.is_active}).eq('id',id);flash(error?'Não foi possível alterar o adicional.':'Status do adicional atualizado.',!error);if(!error)loadOptions()}
+
+  function mountOptionsPanel(){
+    const pricesPanel=document.querySelector('[data-panel="prices"] .panel');if(!pricesPanel||document.querySelector('#nexaOptionsAdmin'))return;
+    const section=document.createElement('section');section.id='nexaOptionsAdmin';section.className='options-admin';
+    section.innerHTML=`<div class="options-admin-head"><div><h2>Serviços e adicionais</h2><p>Cadastre valores extras que podem ser oferecidos ao cliente, sem misturar com o preço de produção.</p></div></div><div class="option-admin-form"><div class="field"><label>NOME</label><input id="nexaOptionLabel" placeholder="Ex.: Corte especial"></div><div class="field"><label>TIPO</label><select id="nexaOptionType"><option value="finish">Acabamento</option><option value="cut">Corte</option><option value="service" selected>Serviço</option><option value="art">Criação de arte</option><option value="other">Outro</option></select></div><div class="field"><label>ACRÉSCIMO</label><input id="nexaOptionPrice" type="number" min="0" step="0.01" value="0"></div><div class="field fullish"><label>DESCRIÇÃO</label><input id="nexaOptionDesc" placeholder="Explique em linguagem simples o que o cliente recebe"></div><button id="nexaOptionSave" class="btn primary" type="button">Adicionar adicional</button></div><div class="options-toolbar"><input id="nexaOptionSearch" placeholder="Filtrar por nome..." style="flex:1"><select id="nexaOptionFilter"><option value="all">Todos os tipos</option><option value="finish">Acabamentos</option><option value="cut">Cortes</option><option value="service">Serviços</option><option value="art">Criação de arte</option><option value="other">Outros</option></select></div><div id="nexaOptionsList" class="options-list"></div>`;
+    pricesPanel.appendChild(section);
+    document.querySelector('#nexaOptionSave').onclick=saveOption;document.querySelector('#nexaOptionFilter').onchange=loadOptions;
+    document.querySelector('#nexaOptionSearch').oninput=()=>{const term=norm(document.querySelector('#nexaOptionSearch').value);document.querySelectorAll('#nexaOptionsList .option-admin-row').forEach(r=>r.style.display=norm(r.textContent).includes(term)?'':'none')};
+    loadOptions();
+  }
+  mountOptionsPanel();
+  document.addEventListener('click',e=>{const edit=e.target.closest?.('[data-opt-edit]');if(edit){editOption(edit.dataset.optEdit);return}const toggle=e.target.closest?.('[data-opt-toggle]');if(toggle)toggleOption(toggle.dataset.optToggle)});
 });
