@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     .art-setting-row{display:flex;align-items:end;gap:12px;max-width:420px}.art-setting-row .field{flex:1}.art-setting-row input{width:100%}
     .options-admin{margin-top:24px}.options-admin-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:14px}.options-admin-head h2{margin:0 0 4px}.options-admin-head p{margin:0;color:var(--admin-muted);font-size:13px}.options-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}.options-toolbar select,.options-toolbar input{min-height:42px}.options-list{display:grid;gap:10px}.option-admin-row{display:grid;grid-template-columns:minmax(180px,1.5fr) 150px minmax(220px,2fr) 90px auto;gap:12px;align-items:center;padding:14px;border:1px solid var(--admin-line);border-radius:12px;background:#fff}.option-admin-row .mini-input{width:100%}.option-admin-row .option-label{font-weight:700}.option-admin-row .option-type{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--admin-muted)}.option-admin-row .option-desc{font-size:12px;color:var(--admin-muted)}.option-admin-row .actions{justify-content:flex-end}.option-admin-form{display:grid;grid-template-columns:1fr 180px 130px 2fr auto;gap:10px;align-items:end;padding:16px;border:1px dashed var(--admin-line);border-radius:12px;background:#fbfdfc;margin-bottom:14px}.option-admin-form .field{margin:0}.option-admin-form button{height:42px}.option-admin-empty{padding:18px;border:1px dashed var(--admin-line);border-radius:12px;color:var(--admin-muted);text-align:center}
     .price-summary{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 14px}.price-summary span{padding:6px 9px;border-radius:999px;background:#f2f7f6;font-size:11px;color:var(--admin-muted)}
+    .price-margin-cell{min-width:145px}.price-margin-cell input{font-weight:750}.price-sale-preview{display:block;margin-top:4px;font-size:10px;color:var(--admin-primary-dark)}
     @media(max-width:900px){.option-admin-row{grid-template-columns:1fr 1fr}.option-admin-form{grid-template-columns:1fr 1fr}.option-admin-form .fullish{grid-column:1/-1}}
     @media(max-width:720px){#modal .form-grid{grid-template-columns:1fr!important}#modal.modal-backdrop,#shippingModal.modal-backdrop{padding:18px 12px!important}.art-setting-row{display:block}.options-admin-head{display:block}.option-admin-row,.option-admin-form{grid-template-columns:1fr}.option-admin-form .fullish{grid-column:auto}}
   `;
@@ -40,13 +41,17 @@ document.addEventListener('DOMContentLoaded',()=>{
         const save=row.querySelector('[data-save-price]');const cost=row.querySelector('[data-cost]');const sale=row.querySelector('[data-sale]');
         if(!save||!cost||!sale||row.querySelector('[data-margin]'))return;
         const id=save.dataset.savePrice,c=Number(String(cost.value).replace(',','.'))||0,s=Number(String(sale.value).replace(',','.'))||0,margin=s>0?((s-c)/s)*100:0;
-        const cell=document.createElement('td');cell.innerHTML=`<input data-margin="${id}" value="${margin.toFixed(1)}" class="price-margin-input" type="number" min="0" max="99.99" step="0.1"><span class="margin-help">Define o preço automaticamente</span>`;
+        const cell=document.createElement('td');cell.className='price-margin-cell';cell.innerHTML=`<input data-margin="${id}" value="${margin.toFixed(1)}" class="price-margin-input" type="number" min="0" max="99.99" step="0.1"><span class="margin-help">Define o preço automaticamente</span><span class="price-sale-preview">Preço: R$ ${s.toFixed(2).replace('.',',')}</span>`;
         const saveCell=save.closest('td');row.insertBefore(cell,saveCell);
         const marginInput=cell.querySelector('[data-margin]');
-        marginInput.addEventListener('input',()=>{const costValue=Number(String(cost.value).replace(',','.'))||0,m=Number(String(marginInput.value).replace(',','.'))||0;if(costValue>=0&&m>=0&&m<100)sale.value=(costValue/(1-m/100)).toFixed(2)});
-        sale.addEventListener('input',()=>{const costValue=Number(String(cost.value).replace(',','.'))||0,saleValue=Number(String(sale.value).replace(',','.'))||0;if(saleValue>0&&saleValue>=costValue)marginInput.value=(((saleValue-costValue)/saleValue)*100).toFixed(1)});
+        marginInput.addEventListener('input',()=>{const costValue=Number(String(cost.value).replace(',','.'))||0,m=Number(String(marginInput.value).replace(',','.'));if(costValue>=0&&Number.isFinite(m)&&m>=0&&m<100){const calculated=costValue/(1-m/100);sale.value=calculated.toFixed(2);cell.querySelector('.price-sale-preview').textContent=`Preço: R$ ${calculated.toFixed(2).replace('.',',')}`}});
+        sale.addEventListener('input',()=>{const costValue=Number(String(cost.value).replace(',','.'))||0,saleValue=Number(String(sale.value).replace(',','.'))||0;if(saleValue>0&&saleValue>=costValue){marginInput.value=(((saleValue-costValue)/saleValue)*100).toFixed(1);cell.querySelector('.price-sale-preview').textContent=`Preço: R$ ${saleValue.toFixed(2).replace('.',',')}`}});
       });
-      const table=priceBox.querySelector('table');if(table&&!table.querySelector('thead th[data-margin-head]')){const th=document.createElement('th');th.dataset.marginHead='1';th.textContent='Margem de lucro';const last=table.querySelector('thead th:last-child');if(last)table.querySelector('thead tr').insertBefore(th,last);else table.querySelector('thead tr').appendChild(th)}
+      priceBox.querySelectorAll('table').forEach(table=>{
+        const headers=[...table.querySelectorAll('thead th')];
+        const marginHeaders=headers.filter(th=>/margem/i.test(th.textContent||''));
+        if(marginHeaders.length>1)marginHeaders.slice(1).forEach(th=>th.remove());
+      });
     };
     new MutationObserver(enhance).observe(priceBox,{childList:true,subtree:true});enhance();
   }
@@ -81,9 +86,47 @@ document.addEventListener('DOMContentLoaded',()=>{
     section.innerHTML=`<div class="options-admin-head"><div><h2>Serviços e adicionais</h2><p>Cadastre valores extras que podem ser oferecidos ao cliente, sem misturar com o preço de produção.</p></div></div><div class="option-admin-form"><div class="field"><label>NOME</label><input id="nexaOptionLabel" placeholder="Ex.: Corte especial"></div><div class="field"><label>TIPO</label><select id="nexaOptionType"><option value="finish">Acabamento</option><option value="cut">Corte</option><option value="service" selected>Serviço</option><option value="art">Criação de arte</option><option value="other">Outro</option></select></div><div class="field"><label>ACRÉSCIMO</label><input id="nexaOptionPrice" type="number" min="0" step="0.01" value="0"></div><div class="field fullish"><label>DESCRIÇÃO</label><input id="nexaOptionDesc" placeholder="Explique em linguagem simples o que o cliente recebe"></div><button id="nexaOptionSave" class="btn primary" type="button">Adicionar adicional</button></div><div class="options-toolbar"><input id="nexaOptionSearch" placeholder="Filtrar por nome..." style="flex:1"><select id="nexaOptionFilter"><option value="all">Todos os tipos</option><option value="finish">Acabamentos</option><option value="cut">Cortes</option><option value="service">Serviços</option><option value="art">Criação de arte</option><option value="other">Outros</option></select></div><div id="nexaOptionsList" class="options-list"></div>`;
     pricesPanel.appendChild(section);
     document.querySelector('#nexaOptionSave').onclick=saveOption;document.querySelector('#nexaOptionFilter').onchange=loadOptions;
-    document.querySelector('#nexaOptionSearch').oninput=()=>{const term=norm(document.querySelector('#nexaOptionSearch').value);document.querySelectorAll('#nexaOptionsList .option-admin-row').forEach(r=>r.style.display=norm(r.textContent).includes(term)?'':'none')};
+    document.querySelector('#nexaOptionSearch').oninput=()=>{const term=(document.querySelector('#nexaOptionSearch').value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();document.querySelectorAll('#nexaOptionsList .option-admin-row').forEach(r=>r.style.display=r.textContent.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes(term)?'':'none')};
     loadOptions();
   }
   mountOptionsPanel();
   document.addEventListener('click',e=>{const edit=e.target.closest?.('[data-opt-edit]');if(edit){editOption(edit.dataset.optEdit);return}const toggle=e.target.closest?.('[data-opt-toggle]');if(toggle)toggleOption(toggle.dataset.optToggle)});
+
+  // Hotfixes de usabilidade do painel administrativo.
+  const modal=document.querySelector('#modal');
+  const productTable=document.querySelector('#productsTable');
+  if(productTable)productTable.addEventListener('click',e=>{const edit=e.target.closest?.('[data-edit]');if(edit&&typeof openEdit==='function'){e.preventDefault();openEdit(edit.dataset.edit)}});
+  document.querySelector('#newProduct')?.addEventListener('click',()=>{if(typeof openNew==='function')openNew()});
+  document.querySelector('#modalClose')?.addEventListener('click',()=>modal?.classList.remove('open'));
+  document.querySelector('#modalCancel')?.addEventListener('click',()=>modal?.classList.remove('open'));
+  modal?.addEventListener('click',e=>{if(e.target===modal)modal.classList.remove('open')});
+
+  function normalizeNumber(v){const s=String(v??'').trim().replace(/\s/g,'');if(!s)return NaN;return Number(s.includes(',')?s.replace(/\./g,'').replace(',','.'):s)}
+  function improveMarginRows(){
+    document.querySelectorAll('#priceProducts table').forEach(table=>{
+      const headers=[...table.querySelectorAll('thead th')];
+      const marginIndex=headers.findIndex(th=>/margem/i.test(th.textContent||''));
+      if(marginIndex<0)return;
+      table.querySelectorAll('tbody tr').forEach(row=>{
+        const cells=[...row.children];const save=row.querySelector('[data-save-price]'),cost=row.querySelector('[data-cost]'),sale=row.querySelector('[data-sale]');
+        if(!save||!cost||!sale)return;
+        let cell=cells[marginIndex];
+        if(!cell)return;
+        if(!cell.querySelector('[data-margin]')){
+          const c=normalizeNumber(cost.value)||0,s=normalizeNumber(sale.value)||0,m=s>0?((s-c)/s)*100:0;
+          cell.className='price-margin-cell';
+          cell.innerHTML=`<input data-margin="${save.dataset.savePrice}" value="${m.toFixed(1)}" class="price-margin-input" type="number" min="0" max="99.99" step="0.1" aria-label="Margem de lucro em porcentagem"><span class="margin-help">Digite a margem desejada</span>`;
+        }
+        const margin=cell.querySelector('[data-margin]');
+        if(margin&&!margin.dataset.hotBound){
+          margin.dataset.hotBound='1';
+          const sync=()=>{const c=normalizeNumber(cost.value),m=normalizeNumber(margin.value);if(Number.isFinite(c)&&c>=0&&Number.isFinite(m)&&m>=0&&m<100){const s=c/(1-m/100);sale.value=s.toFixed(2);}};
+          margin.addEventListener('input',sync);cost.addEventListener('input',sync);
+        }
+      });
+    });
+  }
+  const priceRoot=document.querySelector('#priceProducts');
+  if(priceRoot)new MutationObserver(improveMarginRows).observe(priceRoot,{childList:true,subtree:true});
+  improveMarginRows();
 });
