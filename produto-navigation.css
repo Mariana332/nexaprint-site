@@ -1,0 +1,15 @@
+/* Navegação de produto: cabeçalho completo no topo + navegação compacta fixa durante a rolagem */
+.topbar{position:relative!important;top:auto!important}
+.nexa-primary-nav-sticky{position:sticky!important;top:0!important;z-index:90!important;background:#F1F5F2;box-shadow:0 3px 12px rgba(13,81,76,.06)}
+.nexa-category-nav{position:sticky;top:58px;z-index:80;background:#FFFDF8;border-bottom:1px solid #D8E1DE;box-shadow:0 3px 10px rgba(13,81,76,.045)}
+.nexa-category-nav-inner{width:min(1180px,calc(100% - 36px));margin:0 auto;min-height:46px;display:flex;align-items:center;gap:8px}
+.nexa-category-nav-label{flex:0 0 auto;color:#0D514C;font-size:10px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;padding:0 6px}
+.nexa-category-nav-scroll{display:flex;align-items:center;gap:6px;overflow-x:auto;overflow-y:hidden;scroll-behavior:smooth;scrollbar-width:thin;flex:1;padding:5px 2px}
+.nexa-category-nav-scroll::-webkit-scrollbar{height:5px}.nexa-category-nav-scroll::-webkit-scrollbar-track{background:#EEF3F1;border-radius:10px}.nexa-category-nav-scroll::-webkit-scrollbar-thumb{background:#B7CBC6;border-radius:10px}
+.nexa-category-link{flex:0 0 auto;white-space:nowrap;padding:7px 12px;border:1px solid transparent;border-radius:999px;color:#102F2D;font-size:11px;font-weight:800;transition:.15s ease}
+.nexa-category-link:hover{background:#EAF4F1;border-color:#C9E1DB;color:#0D514C}.nexa-category-link.active{background:#0D514C;color:#fff}
+.nexa-category-arrow{width:28px;height:28px;flex:0 0 28px;border:1px solid #D5E0DD;border-radius:50%;background:#FFF;color:#102F2D;display:grid;place-items:center;font-size:17px;line-height:1}.nexa-category-arrow:disabled{opacity:.3;cursor:default}
+.product-config-panel .data-gap{margin-top:10px;padding:13px 14px;border:1px dashed #C9DAD6;border-radius:11px;background:#F7FAF9;color:#61736F;font-size:12px;line-height:1.5}
+.product-config-panel .data-gap strong{display:block;color:#102F2D;font-size:13px;margin-bottom:3px}
+.buy-actions .btn.is-disabled{opacity:.48;pointer-events:none;cursor:not-allowed}
+@media(max-width:680px){.nexa-category-nav{top:52px}.nexa-category-nav-inner{width:min(100% - 28px,1180px)}.nexa-category-nav-label,.nexa-category-arrow{display:none}.nexa-category-nav-scroll{scrollbar-width:none;padding:5px 0}.nexa-category-nav-scroll::-webkit-scrollbar{display:none}.nexa-category-link{font-size:11px;padding:7px 10px}}
