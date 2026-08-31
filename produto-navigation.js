@@ -1,6 +1,4 @@
 (function(){
-  const esc=v=>String(v??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#039;'}[c]));
-  const norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
   function reorganizeHeader(){
     const topbar=document.querySelector('.topbar');
     const nav=topbar?.querySelector('.nav-bar');
@@ -21,11 +19,23 @@
     const update=()=>{const b=bar.querySelectorAll('.nexa-category-arrow');if(!b.length)return;b[0].disabled=scroll.scrollLeft<=2;b[1].disabled=scroll.scrollLeft+scroll.clientWidth>=scroll.scrollWidth-2};
     scroll.addEventListener('scroll',update,{passive:true});window.addEventListener('resize',update);update();
   }
+  function setBuyDisabled(disabled){
+    document.querySelectorAll('.buy-actions .btn').forEach(b=>{
+      b.classList.toggle('is-disabled',disabled);
+      if(disabled){b.setAttribute('aria-disabled','true');b.title='Indisponível até o cadastro de preço e quantidade'}
+      else{b.removeAttribute('aria-disabled');b.removeAttribute('title')}
+    });
+  }
   function fixDataGaps(){
     const qty=document.querySelector('#quantities');
-    if(qty && /Sem quantidades cadastradas/i.test(qty.textContent||'')){
+    const text=qty?.textContent||'';
+    if(qty && /Sem quantidades cadastradas/i.test(text)){
       qty.innerHTML='<div class="data-gap"><strong>Quantidade e preço em atualização</strong>Esta configuração ainda não teve as quantidades e preços cadastrados. Você já pode conhecer o produto e voltar quando a configuração estiver disponível.</div>';
-      document.querySelectorAll('.buy-actions .btn').forEach(b=>{b.classList.add('is-disabled');b.setAttribute('aria-disabled','true');b.title='Indisponível até o cadastro de preço e quantidade'});
+      setBuyDisabled(true);
+    }else if(qty && !/Escolha todas as opções|Essa combinação não está disponível|Selecione uma configuração/i.test(text) && qty.querySelector('input[name="qty"]')){
+      setBuyDisabled(false);
+    }else if(qty && /Essa combinação não está disponível/i.test(text)){
+      setBuyDisabled(true);
     }
     const templates=document.querySelector('#templateList');
     if(templates && /Nenhum gabarito|Gabarito ainda não cadastrado/i.test(templates.textContent||'')){
