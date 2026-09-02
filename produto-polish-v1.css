@@ -1,0 +1,85 @@
+/* NEXA PRINT — acabamento da experiência de produto
+   Não altera dados, preços, quantidades ou associação de gabaritos. */
+
+.product-page{padding-top:18px}
+.product-page>.container{max-width:1180px}
+
+/* Cabeçalho da página */
+.product-page .crumb{font-size:12px;color:#718087;margin:0 0 14px;padding:0 2px}
+.product-page .crumb a{color:#0b8f83;text-decoration:none;font-weight:700}
+
+/* Estrutura principal */
+.family-v3{grid-template-columns:minmax(0,1fr) 380px;gap:28px}
+.family-v3 .product-config-panel{padding:30px}
+.family-v3 .buy-card{padding:20px;top:20px;border-radius:16px}
+
+/* Identificação */
+.family-v3 .product-heading{padding:0 0 20px}
+.family-v3 .product-heading .eyebrow{display:block;margin-bottom:9px}
+.family-v3 .product-heading .badge{margin:0 0 10px}
+.family-v3 .product-heading h1{font-size:30px;letter-spacing:-.025em;line-height:1.12;margin:0 0 9px;color:#172c35}
+.family-v3 .product-heading>.muted{max-width:650px;font-size:13px}
+
+/* Seletor de produto */
+.family-v3 .family-select{padding:18px 0 20px;border-top:1px solid #e4ebe8;border-bottom:1px solid #e4ebe8}
+.family-v3 .family-select label{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:#52656b}
+.family-v3 .family-select select{height:50px;border-radius:10px;border-color:#cbdad6;font-weight:600}
+.family-v3 .family-help{font-size:11px;line-height:1.45}
+
+/* Etapas */
+.family-v3 .configuration-block{padding-top:23px}
+.family-v3 .step-heading{margin-bottom:16px;align-items:center}
+.family-v3 .step-number{width:29px;height:29px;flex-basis:29px}
+.family-v3 .step-heading h3{font-size:18px;letter-spacing:-.01em}
+
+/* Configuração */
+.family-v3 .config-grid{gap:12px}
+.family-v3 .config-grid .field{padding:15px;border-radius:11px;background:#fff}
+.family-v3 .config-grid .field label{font-size:12px;text-transform:uppercase;letter-spacing:.035em;margin-bottom:8px}
+.family-v3 .config-grid .field small{font-size:10px}
+.family-v3 .config-grid select{min-height:46px;font-size:13px}
+
+/* Quantidades — mantém a lógica atual, só melhora leitura */
+.family-v3 .quantity-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.family-v3 .qty{min-height:54px;padding:11px 14px;border-radius:10px}
+.family-v3 .qty-left{font-size:13px}
+.family-v3 .qty-price{font-size:14px}
+.family-v3 .qty.active{box-shadow:0 0 0 1px #19bcae inset,0 3px 10px rgba(13,81,76,.05)}
+
+/* Gabarito */
+.family-v3 .patterns{margin-top:24px;padding:22px;border-radius:14px}
+.family-v3 .patterns-title{font-size:19px;line-height:1.25}
+.family-v3 .patterns-note{font-size:12px}
+.family-v3 .pattern{min-height:56px}
+.family-v3 .pattern-btn{font-size:11px}
+
+/* Lado direito */
+.family-v3 .buy-card .preview{min-height:270px;height:270px;border:1px solid #e2e9e7;background:#f6f8f7}
+.family-v3 .buy-card .preview img{height:270px;width:100%;object-fit:contain}
+.family-v3 .buy-summary{padding:18px 2px 12px}
+.family-v3 .buy-summary h2{font-size:21px;line-height:1.2;margin:7px 0 12px;color:#243940}
+.family-v3 .summary-options{gap:6px}
+.family-v3 .summary-options span{font-size:11px;line-height:1.35}
+.family-v3 .selected-qty{margin-top:14px;border:1px solid #dbe9e5;background:#f4faf8}
+.family-v3 .price-label{margin-top:8px}
+.family-v3 .total{font-size:32px;letter-spacing:-.02em}
+.family-v3 .buy-actions{gap:9px;margin-top:14px}
+.family-v3 .buy-actions .btn{min-height:46px;border-radius:10px}
+.family-v3 .secure-note{padding-bottom:2px}
+
+/* Evita que a barra de categorias domine a página */
+.product-page~.footer{margin-top:44px}
+
+@media(max-width:900px){
+  .family-v3{grid-template-columns:1fr;gap:18px}
+  .family-v3 .buy-card{position:static}
+  .family-v3 .buy-card .preview,.family-v3 .buy-card .preview img{height:240px;min-height:240px}
+}
+@media(max-width:620px){
+  .product-page{padding-top:10px}
+  .family-v3 .product-config-panel{padding:20px}
+  .family-v3 .product-heading h1{font-size:25px}
+  .family-v3 .quantity-list{grid-template-columns:1fr}
+  .family-v3 .buy-card{padding:15px}
+  .family-v3 .buy-card .preview,.family-v3 .buy-card .preview img{height:210px;min-height:210px}
+}
